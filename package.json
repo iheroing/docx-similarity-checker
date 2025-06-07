@@ -1,0 +1,1 @@
+{"name":"docx-similarity-checker","version":"1.0.0","description":"Word document similarity checker","scripts":{"package":"node tools/package.js"},"author":"Li Yi","license":"MIT","devDependencies":{"archiver":"^7.0.1"}}

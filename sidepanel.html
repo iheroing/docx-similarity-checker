@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>文档查重助手 Pro</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- 先加载第三方库 -->
+    <script src="lib/jszip.min.js"></script>
+    <script src="lib/xlsx.full.min.js"></script>
+    <script src="lib/pdf.min.js"></script>
+    <!-- 然后加载我们的核心功能模块 -->
+    <script src="js/docx-parser.js"></script>
+    <script src="js/pdf-parser.js"></script>
+    <script src="js/document-parser.js"></script>
+    <script src="js/text-similarity.js"></script>
+    <script src="js/report-generator.js"></script>
+    <!-- 最后加载主程序 -->
+    <script src="js/sidepanel.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>文档查重助手 Pro</h1>
+            <div class="developer-info-header">
+                <div class="developer-name">开发者：李弋</div>
+                <div class="social-links">
+                    <a href="https://v.douyin.com/KWLNwyhxiSQ/" target="_blank" class="social-link">
+                        <span class="platform"><img src="icons/tiktok.svg" alt="抖音" class="social-icon"></span>李老师聊医学
+                    </a>
+                    <span class="divider">|</span>
+                    <a href="https://www.xiaohongshu.com/user/profile/61d313ec000000001000e0df?xsec_token=YB7vIleXdfbkd1aFZJ83RRzI23hzVrfyN2aymMy7s2v78=&xsec_source=app_share&xhsshare=CopyLink&appuid=61d313ec000000001000e0df&apptime=1749204004&share_id=8521acb6cf494939a13c739b752d70f4" target="_blank" class="social-link">
+                        <span class="platform"><img src="icons/xiaohongshu.svg" alt="小红书" class="social-icon"></span>医考李老师
+                    </a>
+                </div>
+            </div>
+        </header>
+        
+        <div class="upload-section">
+            <div class="upload-tips">
+                <div class="tips-header">
+                    <div class="tips-icon">💡</div>
+                    <h3 class="tips-title">使用建议</h3>
+                </div>
+                <div class="tips-content">
+                    <div class="tip-item">
+                        <span class="tip-icon">📝</span>
+                        <span class="tip-text">建议上传前删除试题说明、答题要求等重复性文本</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">📄</span>
+                        <span class="tip-text">支持 .docx 和 .pdf 格式的文档</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">📊</span>
+                        <span class="tip-text">单次建议不超过 10 个文档</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">🔍</span>
+                        <span class="tip-text">PDF文档建议为文字版本，扫描版可能识别不准确</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mode-section">
+                <label>
+                    <input type="radio" name="mode" value="single" checked> 单文档查重
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="multiple"> 多文档查重
+                </label>
+            </div>
+            <div class="action-buttons">
+                <button id="uploadBtn" class="action-btn">
+                    <div class="btn-content">
+                        <span class="btn-icon">📁</span>
+                        <span>选择文件</span>
+                    </div>
+                </button>
+                <button id="startBtn" class="action-btn" disabled>
+                    <div class="btn-content">
+                        <span class="btn-icon">🔍</span>
+                        <span>开始查重</span>
+                    </div>
+                </button>
+                <button id="exportBtn" class="action-btn" disabled>
+                    <div class="btn-content">
+                        <span class="btn-icon">📊</span>
+                        <span>导出结果</span>
+                    </div>
+                </button>
+            </div>
+            <input type="file" id="docxFile" accept=".docx,.pdf" multiple style="display: none;">
+        </div>
+    </div>
+
+    <div id="results" class="results-section">
+        <!-- 查重结果将在这里显示 -->
+    </div>
+
+
+    </div>
+</body>
+</html>
