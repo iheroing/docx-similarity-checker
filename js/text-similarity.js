@@ -3,6 +3,17 @@ class TextSimilarity {
         this.vocabulary = new Map();
     }
 
+    // 分句
+    segmentSentences(text) {
+        if (!text) return [];
+        // 使用常见的句子结束符进行分割：。！？.!?
+        // 保留分隔符
+        return text.replace(/([。！？.!?])/g, '$1\n')
+                   .split('\n')
+                   .map(s => s.trim())
+                   .filter(s => s.length > 0);
+    }
+
     // 分词（针对中文和英文）
     tokenize(text) {
         // 将文本转换为小写

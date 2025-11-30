@@ -17,11 +17,14 @@ class PdfParser {
             progressCallback?.('正在解析PDF文档...', 30);
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             
-            progressCallback?.('正在提取文本内容...', 50);
-            const textContent = await this.extractTextFromPdf(pdf, progressCallback);
+            progressCallback?.('正在按行聚合文本...', 50);
+            const paragraphs = await this.extractParagraphsFromPdf(pdf, progressCallback);
             
-            progressCallback?.('正在分析段落...', 90);
-            return this.splitIntoParagraphs(textContent);
+            progressCallback?.('完成解析', 100);
+            if (!paragraphs || paragraphs.length === 0) {
+                throw new Error('未在 PDF 中提取到有效段落');
+            }
+            return paragraphs;
             
         } catch (error) {
             console.error('解析PDF时出错:', error);
@@ -68,6 +71,79 @@ class PdfParser {
         }
         
         return fullText;
+    }
+
+    async extractParagraphsFromPdf(pdf, progressCallback) {
+        const numPages = pdf.numPages;
+        const paragraphs = [];
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            try {
+                const page = await pdf.getPage(pageNum);
+                const textContent = await page.getTextContent();
+
+                const items = (textContent.items || []).map(item => ({
+                    str: item.str || '',
+                    x: Array.isArray(item.transform) ? item.transform[4] : 0,
+                    y: Array.isArray(item.transform) ? item.transform[5] : 0
+                }));
+
+                // 排序：y 从高到低，x 从低到高
+                items.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+
+                // 聚合为行
+                const lineTolerance = 2.0;
+                const lines = [];
+                let currentLine = { y: null, text: '' };
+                for (const token of items) {
+                    if (!token.str) continue;
+                    if (currentLine.y === null) {
+                        currentLine = { y: token.y, text: token.str };
+                    } else if (Math.abs(token.y - currentLine.y) <= lineTolerance) {
+                        currentLine.text += (' ' + token.str);
+                    } else {
+                        if (currentLine.text.trim().length > 0) {
+                            lines.push(currentLine.text.trim());
+                        }
+                        currentLine = { y: token.y, text: token.str };
+                    }
+                }
+                if (currentLine.text && currentLine.text.trim().length > 0) {
+                    lines.push(currentLine.text.trim());
+                }
+
+                // 行 -> 段落（空行或强标点断开）
+                const strongPunct = /[。！？.!?]$/;
+                let buffer = [];
+                for (const line of lines) {
+                    const cleaned = line.replace(/\s+/g, ' ').trim();
+                    if (!cleaned) {
+                        if (buffer.length) {
+                            const para = buffer.join(' ');
+                            if (para.replace(/\s+/g, '').length >= 20) paragraphs.push(para);
+                            buffer = [];
+                        }
+                        continue;
+                    }
+                    buffer.push(cleaned);
+                    if (strongPunct.test(cleaned)) {
+                        const para = buffer.join(' ');
+                        if (para.replace(/\s+/g, '').length >= 20) paragraphs.push(para);
+                        buffer = [];
+                    }
+                }
+                if (buffer.length) {
+                    const para = buffer.join(' ');
+                    if (para.replace(/\s+/g, '').length >= 20) paragraphs.push(para);
+                    buffer = [];
+                }
+
+                const progress = 50 + (pageNum / numPages) * 40;
+                progressCallback?.(`正在处理第 ${pageNum}/${numPages} 页...`, progress);
+            } catch (pageError) {
+                console.warn(`处理第 ${pageNum} 页时出错:`, pageError);
+            }
+        }
+        return paragraphs;
     }
 
     splitIntoParagraphs(text) {

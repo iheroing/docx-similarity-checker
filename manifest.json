@@ -20,24 +20,15 @@
   },
   "permissions": [
     "sidePanel",
-    "storage",
-    "scripting",
     "downloads"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   },
-  "host_permissions": [
-    "*://*/*"
-  ],
   "side_panel": {
     "default_path": "sidepanel.html"
   },
   "background": {
     "service_worker": "background.js"
-  },
-  "web_accessible_resources": [{
-    "resources": ["lib/*"],
-    "matches": ["<all_urls>"]
-  }]
+  }
 }

@@ -3,8 +3,8 @@ class DocxParser {
         try {
             progressCallback?.('正在读取文件...', 10);
             const arrayBuffer = await this.readFileAsArrayBuffer(file);
-            
-            progressCallback?.('正在解析文档...', 30);
+
+            progressCallback?.('正在解析文档结构...', 30);
             const zip = await JSZip.loadAsync(arrayBuffer);
             const documentFile = zip.file('word/document.xml');
             if (!documentFile) {
@@ -12,11 +12,20 @@ class DocxParser {
             }
 
             const documentXml = await documentFile.async('string');
-            progressCallback?.('正在提取文本...', 50);
-            const content = await this.extractDocumentContent(documentXml);
-            
-            progressCallback?.('正在分析段落...', 70);
-            return this.splitIntoParagraphs(content);
+            progressCallback?.('正在提取段落...', 60);
+            const paragraphs = await this.extractParagraphs(documentXml);
+
+            progressCallback?.('正在整理内容...', 80);
+            const cleaned = paragraphs
+                .map(p => p.replace(/\s+/g, ' ').trim())
+                .filter(p => p.replace(/\s+/g, '').length >= 20);
+
+            if (cleaned.length === 0) {
+                throw new Error('未找到有效内容段落');
+            }
+
+            progressCallback?.('完成解析', 100);
+            return cleaned;
 
         } catch (error) {
             console.error('解析文档时出错:', error);
@@ -33,47 +42,48 @@ class DocxParser {
         });
     }
 
-    async extractDocumentContent(xmlContent) {
+    async extractParagraphs(xmlContent) {
         try {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-            
-            // 获取所有文本节点
-            const textNodes = xmlDoc.getElementsByTagName('w:t');
-            let content = '';
-            
-            // 直接提取文本内容
-            for (let t of textNodes) {
-                if (t.textContent) {
-                    content += t.textContent + ' ';
+
+            // 基于 w:p 段落节点提取内容
+            const wNs = 'w';
+            const paragraphNodes = xmlDoc.getElementsByTagName(`${wNs}:p`).length
+                ? xmlDoc.getElementsByTagName(`${wNs}:p`)
+                : xmlDoc.getElementsByTagName('w:p');
+
+            const paragraphs = [];
+            for (let i = 0; i < paragraphNodes.length; i++) {
+                const p = paragraphNodes[i];
+                const runs = p.getElementsByTagName(`${wNs}:r`).length
+                    ? p.getElementsByTagName(`${wNs}:r`)
+                    : p.getElementsByTagName('w:r');
+
+                let text = '';
+                for (let j = 0; j < runs.length; j++) {
+                    const r = runs[j];
+                    const tNodes = r.getElementsByTagName(`${wNs}:t`).length
+                        ? r.getElementsByTagName(`${wNs}:t`)
+                        : r.getElementsByTagName('w:t');
+                    for (let k = 0; k < tNodes.length; k++) {
+                        const t = tNodes[k];
+                        if (t && t.textContent) {
+                            text += t.textContent;
+                        }
+                    }
+                }
+
+                if (text && text.trim().length > 0) {
+                    paragraphs.push(text);
                 }
             }
 
-            return content;
+            return paragraphs;
         } catch (error) {
-            throw new Error('提取文档内容失败: ' + error.message);
+            throw new Error('提取段落失败: ' + error.message);
         }
-    }
-
-    splitIntoParagraphs(text) {
-        // 清理文本
-        text = text.replace(/\s+/g, ' ').trim();
-        
-        // 使用标点符号分割段落
-        const paragraphs = text.split(/[。！？.!?]+/)
-            .map(p => p.trim())
-            .filter(p => {
-                // 移除空白字符后至少包含20个字符
-                const cleaned = p.replace(/\s+/g, '');
-                return cleaned.length >= 20;
-            });
-
-        if (paragraphs.length === 0) {
-            throw new Error('未找到有效内容段落');
-        }
-
-        return paragraphs;
     }
 }
 
-window.DocxParser = DocxParser; 
+window.DocxParser = DocxParser;
